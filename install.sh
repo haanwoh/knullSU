@@ -110,6 +110,8 @@ SHELL_RC="$HOME/.bashrc"
 if ! grep -qs 'PocketLinux' "$SHELL_RC"; then
   {
     printf '\n# PocketLinux\n'
+    # $PATH must stay literal here: it belongs to the shell that reads .bashrc.
+    # shellcheck disable=SC2016
     printf 'case ":$PATH:" in *":%s:"*) ;; *) export PATH="%s:$PATH" ;; esac\n' "$BIN_DIR" "$BIN_DIR"
   } >> "$SHELL_RC"
   ok "added $BIN_DIR to PATH in $SHELL_RC"

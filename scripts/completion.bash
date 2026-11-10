@@ -1,54 +1,87 @@
-# bash completion for plx — source it or drop it in /usr/share/bash-completion/completions/plx
+# bash completion for plx
+#   source scripts/completion.bash
+# or install it:
+#   cp scripts/completion.bash ~/.local/share/bash-completion/completions/plx
+
 _plx_commands="version info doctor config install rootfs shell exec mount service recipe hw backup net gui security"
+
+# Fill COMPREPLY from a space-separated candidate list without word-splitting surprises.
+_plx_complete() {
+  local -a candidates=()
+  mapfile -t candidates < <(compgen -W "$1" -- "$2")
+  COMPREPLY=("${candidates[@]}")
+}
 
 _plx_services() {
   local file="${PLX_HOME:-$HOME/.plx}/services.toml"
-  [ -f "$file" ] && grep -oE '^\[service\.[A-Za-z0-9_.-]+\]' "$file" | sed 's/\[service\.//; s/\]//'
+  [ -f "$file" ] || return 0
+  sed -n 's/^\[service\.\([A-Za-z0-9_.-]*\)\].*/\1/p' "$file"
 }
 
 _plx_recipes() {
-  local dir="${PLX_HOME:-$HOME/.plx}/recipes"
-  { ls "$dir"/*.toml 2>/dev/null; ls "$(dirname "${BASH_SOURCE[0]}")/../examples/recipes"/*.toml 2>/dev/null; } \
-    | xargs -r -n1 basename 2>/dev/null | sed 's/\.toml$//'
+  local home dirs=() here
+  home="${PLX_HOME:-$HOME/.plx}"
+  here="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)"
+  dirs+=("$home/recipes")
+  dirs+=("$here/../examples/recipes")
+  local directory file
+  for directory in "${dirs[@]}"; do
+    [ -d "$directory" ] || continue
+    for file in "$directory"/*.toml; do
+      [ -f "$file" ] || continue
+      file="${file##*/}"
+      printf '%s\n' "${file%.toml}"
+    done
+  done
 }
 
 _plx() {
-  local cur prev words cword
-  _init_completion 2>/dev/null || {
-    COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
-  }
+  local cur="${COMP_WORDS[COMP_CWORD]}"
   local command="${COMP_WORDS[1]}"
+  COMPREPLY=()
 
   if [ "$COMP_CWORD" -eq 1 ]; then
-    COMPREPLY=($(compgen -W "$_plx_commands --help --version --json --no-color --home" -- "$cur"))
-    return
+    _plx_complete "$_plx_commands --help --version --json --no-color --home" "$cur"
+    return 0
   fi
 
   case "$command" in
-    config)  COMPREPLY=($(compgen -W "show path init set edit" -- "$cur")) ;;
-    install) COMPREPLY=($(compgen -W "--list alpine ubuntu debian kali archlinux --url --force --dry-run --dest --arch" -- "$cur")) ;;
-    rootfs)  COMPREPLY=($(compgen -W "status remove" -- "$cur")) ;;
-    mount)   COMPREPLY=($(compgen -W "show --engine --command" -- "$cur")) ;;
-    shell)   COMPREPLY=($(compgen -W "--engine proot chroot --root --no-login --dry-run --show -c" -- "$cur")) ;;
+    config)
+      _plx_complete "show path init set edit" "$cur" ;;
+    install)
+      _plx_complete "alpine ubuntu debian kali archlinux --list --url --force --dry-run --dest --arch" "$cur" ;;
+    rootfs)
+      _plx_complete "status remove" "$cur" ;;
+    mount)
+      _plx_complete "show --engine --command" "$cur" ;;
+    shell)
+      _plx_complete "proot chroot --engine --root --no-login --dry-run --show -c" "$cur" ;;
     service)
       if [ "$COMP_CWORD" -eq 2 ]; then
-        COMPREPLY=($(compgen -W "ls status up down daemon reload example edit logs start stop restart" -- "$cur"))
+        _plx_complete "ls status up down daemon reload example edit logs start stop restart" "$cur"
       else
-        COMPREPLY=($(compgen -W "$(_plx_services)" -- "$cur"))
+        _plx_complete "$(_plx_services)" "$cur"
       fi ;;
     recipe)
       if [ "$COMP_CWORD" -eq 2 ]; then
-        COMPREPLY=($(compgen -W "ls show apply copy" -- "$cur"))
+        _plx_complete "ls show apply copy" "$cur"
       else
-        COMPREPLY=($(compgen -W "$(_plx_recipes)" -- "$cur"))
+        _plx_complete "$(_plx_recipes)" "$cur"
       fi ;;
-    hw)      COMPREPLY=($(compgen -W "ls status call battery wifi sensors torch clipboard-get clipboard-set notification vibrate location camera tts volume brightness wake-lock wake-unlock" -- "$cur")) ;;
-    backup)  COMPREPLY=($(compgen -W "create ls verify restore prune" -- "$cur")) ;;
-    net)     COMPREPLY=($(compgen -W "ip ports ssh sshd-config doctor" -- "$cur")) ;;
-    gui)     COMPREPLY=($(compgen -W "status start stop session" -- "$cur")) ;;
-    security) COMPREPLY=($(compgen -W "report harden --apply --dry-run" -- "$cur")) ;;
+    hw)
+      _plx_complete "ls status call battery wifi sensors location torch clipboard-get clipboard-set notification toast vibrate camera tts volume brightness wake-lock wake-unlock telephony" "$cur" ;;
+    backup)
+      _plx_complete "create ls verify restore prune" "$cur" ;;
+    net)
+      _plx_complete "ip ports ssh sshd-config doctor" "$cur" ;;
+    gui)
+      _plx_complete "status start stop session" "$cur" ;;
+    security)
+      _plx_complete "report harden --apply --dry-run" "$cur" ;;
+    *)
+      COMPREPLY=() ;;
   esac
+  return 0
 }
+
 complete -F _plx plx
