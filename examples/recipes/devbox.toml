@@ -1,0 +1,54 @@
+# A general-purpose development box on a phone.
+#   plx recipe apply devbox
+[recipe]
+name = "devbox"
+description = "git, compilers, python, node, tmux and a sane vim"
+base = "ubuntu"
+notes = """
+Everything here is CLI tooling: it runs on a 6-inch screen with a keyboard,
+and builds rarely-used heavy toolchains only when you ask for them.
+"""
+
+[packages]
+apt = [
+  "git",
+  "curl",
+  "ca-certificates",
+  "build-essential",
+  "pkg-config",
+  "python3",
+  "python3-pip",
+  "python3-venv",
+  "ripgrep",
+  "fd-find",
+  "jq",
+  "htop",
+  "tmux",
+  "neovim",
+  "less",
+  "unzip",
+  "openssh-client",
+]
+pip = ["httpie", "rich"]
+npm = ["typescript", "serve"]
+
+[env]
+EDITOR = "nvim"
+PAGER = "less"
+
+[hooks]
+post_install = [
+  "git config --global init.defaultBranch main",
+  "git config --global pull.rebase true",
+  "echo 'export PS1=\"\\u@\\h:\\w\\$ \"' >> /root/.bashrc",
+]
+
+# Optional background service; start it with: plx service start web
+[services.web]
+command = "python3 -m http.server 8000 --bind 127.0.0.1 --directory /root/projects"
+restart = "on-failure"
+restart_delay = 3.0
+description = "static file server for /root/projects"
+
+[mounts]
+extra = ["/sdcard/Download:/root/downloads"]

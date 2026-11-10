@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "arena/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install
+        run: python -m pip install -e '.[dev]'
+      - name: Lint
+        run: |
+          ruff check plx tests
+          ruff format --check plx tests
+      - name: Test
+        run: pytest -q
+      - name: CLI smoke test
+        run: |
+          python -m plx version --json
+          python -m plx install --list --json > /dev/null
+          python -m plx recipe ls --json > /dev/null
+          python -m plx mount show --json > /dev/null
+          python -m plx doctor --json > doctor.json || true
+          python -c "import json;d=json.load(open('doctor.json'));assert d['checks']"
+
+  scripts:
+    name: shell scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: bash -n install.sh bin/plx scripts/termux-boot.sh scripts/completion.bash
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck -S warning install.sh bin/plx scripts/termux-boot.sh scripts/completion.bash
+
+  no-network-tests:
+    name: offline behaviour
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e '.[dev]'
+      - name: Tests must not need the network
+        run: pytest -q -k "not network"

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# PocketLinux launcher — works straight from a git checkout, no install needed.
+set -euo pipefail
+
+resolve() {
+  local target="$1"
+  while [ -L "$target" ]; do
+    local link
+    link="$(readlink "$target")"
+    case "$link" in
+      /*) target="$link" ;;
+      *) target="$(cd "$(dirname "$target")" && pwd)/$link" ;;
+    esac
+  done
+  cd "$(dirname "$target")" && pwd
+}
+
+HERE="$(resolve "${BASH_SOURCE[0]}")"
+ROOT="$(cd "$HERE/.." && pwd)"
+export PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}"
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 not found — install it first: pkg install python" >&2
+  exit 127
+fi
+
+exec python3 -m plx "$@"
