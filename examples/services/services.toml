@@ -1,0 +1,19 @@
+# Copy to ~/.plx/services.toml (or run `plx service example`) and edit.
+# Start everything:  plx service up
+# Watch one log:     plx service logs web -n 50
+# Validate reload:   plx service reload
+
+[service.sshd]
+command = "/usr/sbin/sshd -D -e"
+restart = "always"
+restart_delay = 2.0
+stop_timeout = 10.0
+description = "guest SSH daemon (install openssh-server in the guest first)"
+
+[service.web]
+command = ["python3", "-m", "http.server", "8000", "--bind", "127.0.0.1"]
+dir = "/root/projects"
+restart = "on-failure"
+restart_delay = 3.0
+env = { PYTHONUNBUFFERED = "1" }
+description = "throwaway static file server"

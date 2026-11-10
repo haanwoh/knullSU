@@ -1,0 +1,31 @@
+# Notebook stack. Jupyter listens on loopback only — reach it over SSH:
+#   ssh -p 8022 -L 8888:127.0.0.1:8888 root@<phone-ip>
+[recipe]
+name = "datascience"
+description = "python data stack + JupyterLab on 127.0.0.1:8888"
+base = "ubuntu"
+notes = """
+Install takes 15-40 minutes on a phone. numpy/scipy wheels for aarch64 exist,
+so nothing is compiled unless you add packages that need it.
+"""
+
+[packages]
+apt = ["python3", "python3-pip", "python3-venv", "libopenblas0", "git", "curl"]
+pip = [
+  "numpy",
+  "pandas",
+  "matplotlib",
+  "scipy",
+  "scikit-learn",
+  "jupyterlab",
+  "ipywidgets",
+]
+
+[services.jupyter]
+command = "jupyter lab --no-browser --allow-root --ip=127.0.0.1 --port=8888 --ServerApp.token='' --ServerApp.password=''"
+restart = "on-failure"
+restart_delay = 5.0
+description = "JupyterLab (loopback only)"
+
+[hooks]
+post_install = ["python3 -m ipykernel install --name python3 || true"]

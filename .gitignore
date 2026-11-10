@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.venv-*/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+coverage.xml
+.coverage
+htmlcov/
+
+# Local PocketLinux state (never commit a user's rootfs / keys / backups)
+.plx/
+*.tar.gz
+*.tar.zst
+*.log
+!docs/**/*.log
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

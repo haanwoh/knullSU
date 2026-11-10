@@ -1,0 +1,17 @@
+# Node/TypeScript front-end box with a live dev server.
+[recipe]
+name = "webdev"
+description = "node, pnpm, typescript and a local dev server"
+base = "ubuntu"
+
+[packages]
+apt = ["nodejs", "npm", "git", "curl", "ca-certificates", "jq"]
+npm = ["pnpm", "typescript", "vite"]
+
+[services.devserver]
+command = "pnpm run dev --host 127.0.0.1 --port 5173"
+dir = "/root/projects/app"
+restart = "on-failure"
+restart_delay = 2.0
+stop_timeout = 5.0
+description = "vite dev server (create /root/projects/app first)"

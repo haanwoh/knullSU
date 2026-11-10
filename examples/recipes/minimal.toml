@@ -1,0 +1,17 @@
+# Smallest useful box: ~150 MiB, boots in under a second, apt is replaced by apk.
+[recipe]
+name = "minimal"
+description = "alpine + git + sshd + bash"
+base = "alpine"
+
+[packages]
+apk = ["git", "curl", "bash", "nano", "openssh", "rsync", "htop", "tmux"]
+
+[services.sshd]
+command = "/usr/sbin/sshd -D -e"
+restart = "always"
+restart_delay = 2.0
+description = "guest sshd (loopback, key-only)"
+
+[hooks]
+post_install = ["ssh-keygen -A"]
